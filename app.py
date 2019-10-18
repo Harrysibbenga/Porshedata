@@ -8,6 +8,8 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://harry:porsche_data1@ds161032.mlab.com:61032/porsche_data?retryWrites=false"
 mongo = PyMongo(app)
 
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 # total_points_arr = []
 # total_wins_arr = []
 # for track in driver["track"]:
@@ -22,8 +24,9 @@ mongo = PyMongo(app)
 #     "$set": {"total_points": int(total_points)}})
 # all_drivers = drivers.find()
 
-
 # helper functions
+
+
 def sum_of_array(arr):
 
     # this function takes an array and returns the sum of all the values within the array
@@ -79,31 +82,50 @@ def input_data():
     # Takes the inputs on the dashbord page for the purpose of building a collection in the mlab database
     # This route also changes the name for the collection so it is relevant to the track, year and session.
     # It also takes the file path from the input form in the dashboard template.
+    # has functionality to save the file into the csvfiles folder after wards it deletes the file so less memory is used when uploading many files.
 
-    if request.method == 'POST':
-        filepath = request.form.get('filepath')
-        track_name = request.form.get('track_name')
-        year = request.form.get('year')
-        section = request.form.get('section')
-        dbname = track_name+year+'_'+section
-        with open(filepath, "r") as csvfile:
-            csvreader = csv.reader(csvfile, delimiter=";", quotechar="/")
-            for row in csvreader:
-                mongo.db.dbname.insert(
-                    {
-                        "driver_number": row[1],
-                        "lap_number": row[2],
-                        "lap_time": row[3],
-                        "lap_improvement": row[4],
-                        "top_speed": row[18],
-                        "driver_name": row[19],
-                        "class": row[21],
-                        "team": row[23],
-                        "year": year,
-                        "track_name": track_name
-                    }
-                )
-            mongo.db.dbname.rename(dbname)
+    target = os.path.join(APP_ROOT, 'csvfiles/')
+
+    if not os.path.isdir(target):
+        os.mkdir(target)
+
+    for file in request.files.getlist("filepath"):
+        filename = file.filename
+        destination = "/".join([target, filename])
+        file.save(destination)
+
+        if request.method == 'POST':
+
+            track_name = request.form.get('track_name').lower()
+            year = request.form.get('year')
+            section = request.form.get('section')
+            filepath = "csvfiles/"+filename
+            dbname = track_name+str(year)+'_'+section
+
+            with open(filepath, "r") as csvfile:
+                csvreader = csv.reader(csvfile, delimiter=";", quotechar="/")
+                for row in csvreader:
+                    mongo.db.dbname.insert(
+                        {
+                            "driver_number": row[1],
+                            "lap_number": row[2],
+                            "lap_time": row[3],
+                            "lap_improvement": row[4],
+                            "top_speed": row[18],
+                            "driver_name": row[19],
+                            "class": row[21],
+                            "team": row[23],
+                            "year": year,
+                            "track_name": track_name
+                        }
+                    )
+                # removes generic table names document
+                mongo.db.dbname.delete_one({"driver_name": "DRIVER_NAME"})
+                mongo.db.dbname.rename(dbname)
+
+            # delets the file after its uploaded to the database.
+            os.remove(destination)
+
     return render_template("dashboard.html")
 
 
