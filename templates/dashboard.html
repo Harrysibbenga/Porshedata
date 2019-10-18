@@ -1,0 +1,16 @@
+{ % extends 'base.html' % }
+{% block content %}
+<section>
+    <form action="{{url_for('input_data')}}" method="POST">
+        <label for="track_name">Track name:</label>
+        <input type="text" id="track_name" name="track_name">
+        <label for="year">Year:</label>
+        <input type="text" id="year" name="year">
+        <label for="section">Section:</label>
+        <input type="text" id="section" name="section">
+        <label for="filepath">CSV file:</label>
+        <input type="file" name="filepath" id="filepath">
+        <button type="submit">Submit</button>
+    </form>
+</section>
+{% endblock %}
