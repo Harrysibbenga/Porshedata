@@ -2,6 +2,7 @@ import os
 import csv
 from flask import Flask, render_template, redirect, url_for, request
 from flask_pymongo import PyMongo
+from bson import ObjectId
 
 
 app = Flask(__name__)
@@ -52,7 +53,8 @@ def input_data():
                             "class": row[21],
                             "team": row[23],
                             "year": year,
-                            "track_name": track_name
+                            "track_name": track_name,
+                            "round": section,
                         }
                     )
                 # removes generic table names document
@@ -71,9 +73,10 @@ def index():
     practice_2 = mongo.db.silverstone2019_practice_2
     qualifying = mongo.db.silverstone2019_qualifying
     race = mongo.db.silverstone2019_race
+    drivers = mongo.db.drivers
 
     names = get_names(practice_1.find())
-
+    driver_names = get_names(drivers.find())
     for name in names:
 
         lap_time = get_data_and_append_to_list(
@@ -87,20 +90,50 @@ def index():
         top_speed = get_data_and_append_to_list(
             practice_1.find(), 'top_speed', name)
 
-        mongo.db.drivers.insert({
-            "driver_name": name,
-            # "class": driving_class,
-            # "team": team,
-            'tracks': {
-                # "year": year,
-                # "track_name": track_name,
-                "driver_numbers": driver_number,
-                "lap_numbers": lap_number,
-                "lap_times": lap_time,
-                "lap_improvements": lap_improvement,
-                "top_speeds": top_speed,
-            }
-        })
+        year = get_value_from_collection(practice_1.find(), 'year', name)
+
+        round_name = get_value_from_collection(
+            practice_1.find(), 'round', name)
+
+        team = get_value_from_collection(practice_1.find(), 'team', name)
+
+        driving_class = get_value_from_collection(
+            practice_1.find(), 'class', name)
+
+        track_name = get_value_from_collection(
+            practice_1.find(), 'track_name', name)
+
+        if name not in driver_names:
+
+            mongo.db.drivers.insert({
+                "driver_name": name,
+                "class": driving_class,
+                "team": team,
+                'tracks': {
+                    'round': round_name,
+                    'year': year,
+                    "track_name": track_name,
+                    "driver_numbers": driver_number,
+                    "lap_numbers": lap_number,
+                    "lap_times": lap_time,
+                    "lap_improvements": lap_improvement,
+                    "top_speeds": top_speed,
+                }
+            })
+        else:
+
+            mongo.db.drivers.update(
+                {"driver_name": name},
+                {"$addToSet": {
+                    'tracks.round': round_name,
+                    'tracks.year': year,
+                    "tracks.track_name": track_name,
+                    "tracks.driver_numbers": driver_number,
+                    "tracks.lap_numbers": lap_number,
+                    "tracks.lap_times": lap_time,
+                    "tracks.lap_improvements": lap_improvement,
+                    "tracks.top_speeds": top_speed,
+                }})
 
     return render_template("index.html", practice_1=practice_1.find(), practice_2=practice_2.find(), qualifying=qualifying.find(), race=race.find())
 
@@ -129,6 +162,18 @@ def get_data_and_append_to_list(coll, field, name):
         if d['driver_name'] == name:
             arr.append(data)
     return arr
+
+
+def get_value_from_collection(coll, field, name):
+    # This function loops thorugh the collection and makes a list for a specific feild in the dataset and returns it
+    # coll gets the collection name
+    # field is the feild that we would like to query
+    # name is going to the name of the driver
+    value = ''
+    for d in coll:
+        if d['driver_name'] == name:
+            value = d[field]
+    return value
 
 
 if __name__ == '__main__':
