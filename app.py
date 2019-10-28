@@ -5,75 +5,11 @@ from flask_pymongo import PyMongo
 
 
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb://harry:porsche_data1@ds161032.mlab.com:61032/porsche_data?retryWrites=false"
+app.config["MONGO_URI"] = os.getenv('MONGO_URI')
 mongo = PyMongo(app)
 
+# gets file path fron computer being used
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-# total_points_arr = []
-# total_wins_arr = []
-# for track in driver["track"]:
-#     total_points_arr.append(track['points'])
-#     if track["position"] == 1:
-#         total_wins_arr.append(track["position"])
-#         total_wins = sum_array(total_wins_arr)
-#     drivers.update_one({"lastname": driver["lastname"]}, {
-#         "$set": {"total_wins": int(total_wins)}})
-# total_points = sum_array(total_points_arr)
-# drivers.update_one({"lastname": driver["lastname"]}, {
-#     "$set": {"total_points": int(total_points)}})
-# all_drivers = drivers.find()
-
-# helper functions
-
-
-def sum_of_array(arr):
-
-    # this function takes an array and returns the sum of all the values within the array
-
-    return(sum(arr))
-
-
-def get_driver_championships(drivers, all_drivers, championship_name, years_in_championship_name, total_years_in_championship_name):
-
-    # this function takes the:
-    # - drivers collection and cursor object of all_dirvers
-    # - the championship_name that needs queriying
-    # - years_in_championship_name which will be updated in the database as an array
-    # - total_years_in_championship_name which will be updated as an integer in the database
-
-    # for the purpose of searching all drivers for a specific championship name within the database and generating the
-    # years the driver has been in that championship including the amount of times they have entered that championship (case sensitive)
-    # returning an updated value of all_drivers in the database
-
-    # makes sure that the value insert in the array isnt duplicated
-
-    years_in_champ_arr = []
-
-    for driver in all_drivers:
-
-        for championship in driver["championships"]:
-
-            if championship["name"] == championship_name:
-                if not championship["year"] in years_in_champ_arr:
-                    years_in_champ_arr.append(championship["year"])
-
-        total_years_in_champ = len(years_in_champ_arr)
-
-        drivers.update_one({"lastname": driver["lastname"]}, {
-            "$set": {years_in_championship_name: years_in_champ_arr, total_years_in_championship_name: total_years_in_champ}
-        })
-
-        all_drivers = drivers.find()
-
-        return all_drivers
-
-
-# def podiums(drivers, all_drivers):
-#     podiums = []
-#     for driver in all_drivers:
-#         print(driver['rounds'])
-#     # podiums = sum_of_array(podiums)
 
 
 @app.route('/input_data', methods=['GET', 'POST'])
@@ -82,7 +18,7 @@ def input_data():
     # Takes the inputs on the dashbord page for the purpose of building a collection in the mlab database
     # This route also changes the name for the collection so it is relevant to the track, year and session.
     # It also takes the file path from the input form in the dashboard template.
-    # has functionality to save the file into the csvfiles folder after wards it deletes the file so less memory is used when uploading many files.
+    # has functionality to save the file into the csvfiles folder and deletes the file so less memory is used when uploading many files.
 
     target = os.path.join(APP_ROOT, 'csvfiles/')
 
@@ -131,12 +67,68 @@ def input_data():
 
 @app.route('/')
 def index():
-    practice_1 = mongo.db.silverstone2019_practice_1.find()
-    practice_2 = mongo.db.silverstone2019_practice_2.find()
-    qualifying = mongo.db.silverstone2019_qualifying.find()
-    race = mongo.db.silverstone2019_race.find()
+    practice_1 = mongo.db.silverstone2019_practice_1
+    practice_2 = mongo.db.silverstone2019_practice_2
+    qualifying = mongo.db.silverstone2019_qualifying
+    race = mongo.db.silverstone2019_race
 
-    return render_template("index.html", practice_1=practice_1, practice_2=practice_2, qualifying=qualifying, race=race)
+    names = get_names(practice_1.find())
+
+    for name in names:
+
+        lap_time = get_data_and_append_to_list(
+            practice_1.find(), 'lap_time', name)
+        lap_number = get_data_and_append_to_list(
+            practice_1.find(), 'lap_number', name)
+        driver_number = get_data_and_append_to_list(
+            practice_1.find(), 'driver_number', name)
+        lap_improvement = get_data_and_append_to_list(
+            practice_1.find(), 'lap_improvement', name)
+        top_speed = get_data_and_append_to_list(
+            practice_1.find(), 'top_speed', name)
+
+        mongo.db.drivers.insert({
+            "driver_name": name,
+            # "class": driving_class,
+            # "team": team,
+            'tracks': {
+                # "year": year,
+                # "track_name": track_name,
+                "driver_numbers": driver_number,
+                "lap_numbers": lap_number,
+                "lap_times": lap_time,
+                "lap_improvements": lap_improvement,
+                "top_speeds": top_speed,
+            }
+        })
+
+    return render_template("index.html", practice_1=practice_1.find(), practice_2=practice_2.find(), qualifying=qualifying.find(), race=race.find())
+
+# functions
+
+
+def get_names(coll):
+    # This function loops through the collection and makes a list of driver names in the dataset and returns it
+    # coll gets the collection name
+    names = []
+    for d in coll:
+        name = d['driver_name']
+        if name not in names:
+            names.append(name)
+    return names
+
+
+def get_data_and_append_to_list(coll, field, name):
+    # This function loops thorugh the collection and makes a list for a specific feild in the dataset and returns it
+    # coll gets the collection name
+    # field is the feild that we would like to query
+    # name is going to the name of the driver
+    arr = []
+    for d in coll:
+        data = d[field]
+        if d['driver_name'] == name:
+            arr.append(data)
+    return arr
 
 
 if __name__ == '__main__':
