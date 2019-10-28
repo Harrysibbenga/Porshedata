@@ -1,34 +1,12 @@
 {% extends "base.html" %}
 {% block page_content %}
 <section>
-    <h1>Practice 1</h1>
-    {% for driver in practice_1 %}
+    <h1>Drivers</h1>
+    {% for driver in drivers %}
     <p>{{driver.driver_name}}</p>
-    <p>{{ driver.lap_number }}, {{ driver.lap_time }}</p>
-    {%endfor%}
-</section>
-<section>
-    <h1>Practice 2</h1>
-    {% for driver in practice_2 %}
-    <p>{{driver.driver_name}}</p>
-    <p>{{ driver.lap_number }}, {{ driver.lap_time }}</p>
-    {%endfor%}
-</section>
-
-<section>
-
-    <h1>Qualifying</h1>
-    {% for driver in qualifying %}
-    <p>{{driver.driver_name}}</p>
-    <p>{{ driver.lap_number }}, {{ driver.lap_time }}</p>
-    {%endfor%}
-</section>
-
-<section>
-    <h1>Race</h1>
-    {% for driver in race %}
-    <p>{{driver.driver_name}}</p>
-    <p>{{ driver.lap_number }}, {{ driver.lap_time }}</p>
+    <p>{{ driver.class }}</p>
+    <p>{{ driver.team }}</p>
+    <p>{{driver.tracks}}</p>
     {%endfor%}
 </section>
 
