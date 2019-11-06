@@ -16,7 +16,6 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 @app.route('/input_data', methods=['GET', 'POST'])
 def input_data():
     drivers = mongo.db.drivers
-    driver_names = get_names(drivers.find())
     # Takes the inputs on the dashbord page for the purpose of building a collection in the mlab database
     # This route also changes the name for the collection so it is relevant to the track, year and session.
     # It also takes the file path from the input form in the dashboard template.
@@ -27,112 +26,127 @@ def input_data():
     if not os.path.isdir(target):
         os.mkdir(target)
 
-    for file in request.files.getlist("filepath"):
-        filename = file.filename
-        destination = "/".join([target, filename])
-        file.save(destination)
+    if request.method == 'POST':
 
-        if request.method == 'POST':
+        stage_names = ['practice_1', 'practice_2', 'qualifying', 'race']
 
-            track_name = request.form.get('track_name').lower()
-            year = request.form.get('year')
-            section = request.form.get('section')
-            filepath = "csvfiles/"+filename
-            dbname = track_name+str(year)+'_'+section
+        for stage_name in stage_names:
+            for file in request.files.getlist(stage_name):
+                filename = file.filename
+                destination = "/".join([target, filename])
+                file.save(destination)
 
-            with open(filepath, "r") as csvfile:
-                csvreader = csv.reader(csvfile, delimiter=";", quotechar="/")
-                for row in csvreader:
-                    mongo.db.dbname.insert(
-                        {
-                            "driver_number": row[1],
-                            "lap_number": row[2],
-                            "lap_time": row[3],
-                            "lap_improvement": row[4],
-                            "top_speed": row[18],
-                            "driver_name": row[19],
-                            "class": row[21],
-                            "team": row[23],
-                            "year": year,
-                            "track_name": track_name,
-                            "round": section,
-                        }
-                    )
-                # Removes generic table names in the document
-                mongo.db.dbname.delete_one({"driver_name": "DRIVER_NAME"})
-                # Gets the names of all the drivers in the collection
-                names = get_names(mongo.db.dbname.find())
+                track_name = request.form.get(
+                    'track_name').lower()
+                year = request.form.get('year')
+                filepath = "csvfiles/"+filename
+                championship_name = request.form.get(
+                    'championship_name').lower()
 
-                for name in names:
-                    # this loop compairs the name of the drivers in the uploaded collection and the drivers collection
-                    # if the driver is not in the loop then a new record will be made for the new driver
-                    # other wise the track information is updated for the existing one.
-                    lap_time = get_data_and_append_to_list(
-                        mongo.db.dbname.find(), 'lap_time', name)
-                    lap_number = get_data_and_append_to_list(
-                        mongo.db.dbname.find(), 'lap_number', name)
-                    driver_number = get_data_and_append_to_list(
-                        mongo.db.dbname.find(), 'driver_number', name)
-                    lap_improvement = get_data_and_append_to_list(
-                        mongo.db.dbname.find(), 'lap_improvement', name)
-                    top_speed = get_data_and_append_to_list(
-                        mongo.db.dbname.find(), 'top_speed', name)
+                with open(filepath, "r") as csvfile:
+                    csvreader = csv.reader(
+                        csvfile, delimiter=";", quotechar="/")
+                    for row in csvreader:
+                        mongo.db.dbname.insert(
+                            {
+                                "number": row[0],
+                                "driver_number": row[1],
+                                "lap_number": row[2],
+                                "lap_time": row[3],
+                                "lap_improvement": row[4],
+                                "top_speed": row[18],
+                                "driver_name": row[19],
+                                "class": row[21],
+                                "team": row[23],
+                                "year": year,
+                                "track_name": track_name,
+                                "round": stage_name,
+                            }
+                        )
+                    # Removes generic table names in the document
+                    mongo.db.dbname.delete_one({"driver_name": "DRIVER_NAME"})
+                    # Gets the names of all the drivers in the collection
+                    names = get_names(mongo.db.dbname.find())
 
-                    year = get_value_from_collection(
-                        mongo.db.dbname.find(), 'year', name)
+                    for name in names:
+                        # this loop compairs the name of the drivers in the uploaded collection and the drivers collection
+                        # if the driver is not in the loop then a new record will be made for the new driver
+                        # other wise the track information is updated for the existing one.
+                        lap_time = get_data_and_append_to_list(
+                            mongo.db.dbname.find(), 'lap_time', name)
+                        lap_number = get_data_and_append_to_list(
+                            mongo.db.dbname.find(), 'lap_number', name)
+                        driver_number = get_data_and_append_to_list(
+                            mongo.db.dbname.find(), 'driver_number', name)
+                        lap_improvement = get_data_and_append_to_list(
+                            mongo.db.dbname.find(), 'lap_improvement', name)
+                        top_speed = get_data_and_append_to_list(
+                            mongo.db.dbname.find(), 'top_speed', name)
 
-                    round_name = get_value_from_collection(
-                        mongo.db.dbname.find(), 'round', name)
+                        year = get_value_from_collection(
+                            mongo.db.dbname.find(), 'year', name)
 
-                    team = get_value_from_collection(
-                        mongo.db.dbname.find(), 'team', name)
+                        round_name = get_value_from_collection(
+                            mongo.db.dbname.find(), 'round', name)
 
-                    driving_class = get_value_from_collection(
-                        mongo.db.dbname.find(), 'class', name)
+                        team = get_value_from_collection(
+                            mongo.db.dbname.find(), 'team', name)
 
-                    track_name = get_value_from_collection(
-                        mongo.db.dbname.find(), 'track_name', name)
+                        number = get_value_from_collection(
+                            mongo.db.dbname.find(), 'number', name)
 
-                    if name not in driver_names:
+                        driving_class = get_value_from_collection(
+                            mongo.db.dbname.find(), 'class', name)
 
-                        mongo.db.drivers.insert({
-                            "driver_name": name,
-                            "class": driving_class,
-                            "team": team,
-                            "profile_image": '',
-                            "date_of_birth": '',
-                            "born": '',
-                            "lives": '',
-                            'tracks': [
-                                {
-                                    'round': round_name,
+                        track_name = get_value_from_collection(
+                            mongo.db.dbname.find(), 'track_name', name)
+
+                        driver_names = get_names(drivers.find())
+
+                        if name not in driver_names:
+
+                            mongo.db.drivers.insert({
+                                "driver_name": name,
+                                "class": driving_class,
+                                "team": team,
+                                "profile_image": '',
+                                "date_of_birth": '',
+                                "born": '',
+                                "lives": '',
+                                'championship': [
+                                    {
+                                        'name': championship_name,
+                                        'round': stage_name,
+                                        'year': year,
+                                        "track_name": track_name,
+                                        "driver_numbers": driver_number,
+                                        'number': number,
+                                        "lap_numbers": lap_number,
+                                        "lap_times": lap_time,
+                                        "lap_improvements": lap_improvement,
+                                        "top_speeds": top_speed,
+                                    }
+                                ]
+                            })
+                        else:
+                            mongo.db.drivers.update(
+                                {"driver_name": name},
+                                {"$push": {'championship': {
+                                    'name': championship_name,
+                                    'round': stage_name,
                                     'year': year,
-                                    "track_name": track_name,
-                                    "driver_numbers": driver_number,
-                                    "lap_numbers": lap_number,
-                                    "lap_times": lap_time,
-                                    "lap_improvements": lap_improvement,
-                                    "top_speeds": top_speed,
-                                }
-                            ]
-                        })
-                    else:
-                        mongo.db.drivers.update(
-                            {"driver_name": name},
-                            {"$push": {'tracks': {
-                                'round': round_name,
-                                'year': year,
-                                'track_name': track_name,
-                                'driver_numbers': driver_number,
-                                'lap_numbers': lap_number,
-                                'lap_times': lap_time,
-                                'lap_improvements': lap_improvement,
-                                'top_speeds': top_speed,
-                            }}})
-                # this is to delete the tempral collection created by uploading the csv file.
-                mongo.db.dbname.drop()
-                # delets the file after its uploaded to the database.
-                os.remove(destination)
+                                    'number': number,
+                                    'track_name': track_name,
+                                    'driver_numbers': driver_number,
+                                    'lap_numbers': lap_number,
+                                    'lap_times': lap_time,
+                                    'lap_improvements': lap_improvement,
+                                    'top_speeds': top_speed,
+                                }}})
+                    # this is to delete the tempral collection created by uploading the csv file.
+                    mongo.db.dbname.drop()
+                    # delets the file after its uploaded to the database.
+                    os.remove(destination)
 
     return render_template("dashboard.html", drivers=drivers.find())
 
