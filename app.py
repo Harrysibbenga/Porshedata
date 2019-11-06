@@ -99,6 +99,10 @@ def input_data():
                             "driver_name": name,
                             "class": driving_class,
                             "team": team,
+                            "profile_image": '',
+                            "date_of_birth": '',
+                            "born": '',
+                            "lives": '',
                             'tracks': [
                                 {
                                     'round': round_name,
@@ -130,7 +134,47 @@ def input_data():
                 # delets the file after its uploaded to the database.
                 os.remove(destination)
 
-    return render_template("dashboard.html")
+    return render_template("dashboard.html", drivers=drivers.find())
+
+
+@app.route('/view_driver', methods=['GET', 'POST'])
+def view_driver():
+    selected_name = request.form.get("driver")
+    driver = mongo.db.drivers.find_one({'driver_name': selected_name})
+    return render_template("view.html", driver=driver)
+
+
+@app.route('/edit_driver/<driver_id>', methods=['GET', 'POST'])
+def edit_driver(driver_id):
+    driver = mongo.db.drivers.find_one({'_id': ObjectId(driver_id)})
+    return render_template('editdriver.html', driver=driver)
+
+
+@app.route('/update_driver/<driver_id>', methods=['GET', 'POST'])
+def update_driver(driver_id):
+    driver = mongo.db.drivers.find_one({'_id': ObjectId(driver_id)})
+    target = os.path.join(APP_ROOT, 'static/images')
+
+    for file in request.files.getlist("driver_image"):
+        filename = file.filename
+        destination = "/".join([target, filename])
+        file.save(destination)
+
+        if request.method == 'POST':
+            filepath = "static/images/"+filename
+            mongo.db.drivers.update(
+                {'_id': ObjectId(driver_id)},
+                {'$set':
+                    {
+                        'date_of_birth': request.form.get('date_of_birth'),
+                        'born': request.form.get('born'),
+                        'lives': request.form.get('lives'),
+                        'team': request.form.get('team'),
+                        'profile_image': filename
+                    }
+                 }
+            )
+    return redirect(url_for('view_driver', driver=driver))
 
 
 @app.route('/')
