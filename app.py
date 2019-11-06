@@ -144,7 +144,7 @@ def view_driver():
     return render_template("view.html", driver=driver)
 
 
-@app.route('/edit_driver/<driver_id>', methods=['GET', 'POST'])
+@app.route('/edit_driver/<driver_id>', methods=['GET'])
 def edit_driver(driver_id):
     driver = mongo.db.drivers.find_one({'_id': ObjectId(driver_id)})
     return render_template('editdriver.html', driver=driver)
@@ -153,28 +153,31 @@ def edit_driver(driver_id):
 @app.route('/update_driver/<driver_id>', methods=['GET', 'POST'])
 def update_driver(driver_id):
     driver = mongo.db.drivers.find_one({'_id': ObjectId(driver_id)})
-    target = os.path.join(APP_ROOT, 'static/images')
+    target = os.path.join(APP_ROOT, 'static/images/drivers')
 
-    for file in request.files.getlist("driver_image"):
+    for file in request.files.getlist("profile_image"):
         filename = file.filename
         destination = "/".join([target, filename])
         file.save(destination)
 
         if request.method == 'POST':
-            filepath = "static/images/"+filename
-            mongo.db.drivers.update(
+            date_of_birth = request.form.get('date_of_birth')
+            born = request.form.get('born')
+            lives = request.form.get('lives')
+            team = request.form.get('team')
+            mongo.db.drivers.update_one(
                 {'_id': ObjectId(driver_id)},
                 {'$set':
                     {
-                        'date_of_birth': request.form.get('date_of_birth'),
-                        'born': request.form.get('born'),
-                        'lives': request.form.get('lives'),
-                        'team': request.form.get('team'),
+                        'date_of_birth': date_of_birth,
+                        'born': born,
+                        'lives': lives,
+                        'team': team,
                         'profile_image': filename
                     }
                  }
             )
-    return redirect(url_for('view_driver', driver=driver))
+    return render_template('view.html', driver=driver)
 
 
 @app.route('/')
