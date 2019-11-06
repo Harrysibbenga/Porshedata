@@ -6,13 +6,13 @@
             <!-- Grid column -->
             <div class="col-xl-5 col-md-6 my-3 text-center">
                 {% if driver.profile_image == '' %}
-                <img src="../static/images/default_human_icon.jpg" class="img-fluid z-depth-1 rounded-circle"
+                <img src="../static/images/drivers/default_human_icon.jpg" class="img-fluid z-depth-1 rounded-circle"
                     alt="Default avatar image">
                 <a class="btn-floating btn-lg btn-default" href="{{url_for('edit_driver', driver_id=driver._id)}}"><i
                         class="fas fa-user-edit"></i></a>
                 {% else %}
-                <img src="../static/images/{{driver.profile_image}}" class="img-fluid z-depth-1 rounded-circle"
-                    alt="Responsive image">
+                <img src="../static/images/drivers/{{driver.profile_image}}" class="img-fluid z-depth-1 rounded-circle"
+                    alt="{{driver.driver_name}}">
                 <a class="btn-floating btn-lg btn-default" href="{{url_for('edit_driver', driver_id=driver._id)}}"><i
                         class="fas fa-user-edit"></i></a>
                 {% endif %}
