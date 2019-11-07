@@ -35,9 +35,14 @@
                             <label for="team">Team:</label>
                             <input type="text" value="{{driver.team}}" name="team">
                         </div>
+                        <!-- current team -->
+                        <div class="col-12">
+                            <label for="description">Description:</label>
+                            <input type="text" value="{{driver.description}}" name="description">
+                        </div>
                         <div class="col-12">
                             <label for="profile_image">Driver image:</label>
-                            <input type="file" value="{{driver.profile_image}}" name="profile_image" accept="image/*">
+                            <input type="file" name="profile_image" accept="image/*">
                         </div>
                         <button class="btn btn-default" type="submit">Edit</button>
                     </div>
