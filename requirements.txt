@@ -3,6 +3,7 @@ attrs==19.3.0
 autopep8==1.4.4
 black==19.3b0
 Click==7.0
+dnspython==1.16.0
 Flask==1.1.1
 Flask-PyMongo==2.3.0
 gunicorn==19.9.0
